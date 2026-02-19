@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevPilot Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #24292f;
+      background: #fff;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #d0d7de;
+      background: #f6f8fa;
+    }
+
+    .header-logo {
+      font-size: 20px;
+    }
+
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #24292f;
+    }
+
+    .header span {
+      font-size: 11px;
+      color: #57606a;
+      margin-left: auto;
+    }
+
+    .form {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-weight: 500;
+      color: #24292f;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .optional {
+      font-size: 11px;
+      color: #57606a;
+      font-weight: 400;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="url"] {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #24292f;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #57606a;
+      line-height: 1.4;
+    }
+
+    .hint a {
+      color: #0969da;
+      text-decoration: none;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #d0d7de;
+      margin: 0;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #57606a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 16px;
+    }
+
+    button {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid;
+      transition: background 0.15s;
+    }
+
+    #btn-save {
+      background: #1f883d;
+      border-color: #1a7f37;
+      color: #fff;
+    }
+
+    #btn-save:hover { background: #1a7f37; }
+
+    #btn-clear {
+      background: #f6f8fa;
+      border-color: #d0d7de;
+      color: #24292f;
+    }
+
+    #btn-clear:hover { background: #eef1f4; }
+
+    .status {
+      margin: 0 16px 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .status.success {
+      background: #dafbe1;
+      border: 1px solid #82e09a;
+      color: #1a7f37;
+    }
+
+    .status.error {
+      background: #ffebe9;
+      border: 1px solid #ff8182;
+      color: #cf222e;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="header-logo">🧭</span>
+    <h1>DevPilot</h1>
+    <span>v1.0.0</span>
+  </div>
+
+  <div class="form">
+    <div class="field">
+      <label for="github-token">GitHub Token</label>
+      <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+      <p class="hint">
+        Generate at <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a>
+        — needs <code>repo</code> + <code>read:org</code>
+      </p>
+    </div>
+
+    <div class="field">
+      <label for="backend-url">Backend URL</label>
+      <input type="url" id="backend-url" placeholder="http://localhost:3000">
+      <p class="hint">Leave as default for local development.</p>
+    </div>
+
+    <hr class="divider">
+    <p class="section-title">Jira (Optional)</p>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="jira-url">Jira Base URL</label>
+        <span class="optional">optional</span>
+      </div>
+      <input type="url" id="jira-url" placeholder="https://yourcompany.atlassian.net">
+    </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="jira-token">Jira Token</label>
+        <span class="optional">optional</span>
+      </div>
+      <input type="password" id="jira-token" placeholder="email:api_token" autocomplete="off">
+      <p class="hint">Format: <code>your@email.com:your_api_token</code></p>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="btn-row">
+    <button id="btn-save">Save Settings</button>
+    <button id="btn-clear">Clear</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
