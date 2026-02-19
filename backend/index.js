@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     /^chrome-extension:\/\/.*/,
+    'https://github.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000'
   ],
