@@ -1,12 +1,11 @@
-/* DevPilot — content script
-   Runs on: https://github.com/*/*/pull/*
-   Responsibilities:
-     1. Detect GitHub PR pages (including SPA navigation)
-     2. Inject collapsible sidebar
-     3. Extract PR metadata from the page
-     4. Call DevPilot backend
-     5. Render results in 4 cards
-*/
+// DevPilot - content script
+// Runs on: https://github.com/*/*/pull/*
+// Responsibilities:
+//     1. Detect GitHub PR pages (including SPA navigation)
+//     2. Inject collapsible sidebar
+//     3. Extract PR metadata from the page
+//     4. Call DevPilot backend
+//     5. Render results in 4 cards
 
 (function () {
   'use strict';

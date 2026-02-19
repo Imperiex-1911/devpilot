@@ -1,11 +1,9 @@
 // Airia API service
-// Base URL: https://airia.ai
-// Auth: X-API-KEY header
-// Run agent:  POST /v1/JobOrchestration
-// Stream:     GET  /v1/JobOrchestration/{id}/sse
-// Result:     GET  /v1/JobOrchestration/{id}/result
+// Endpoint: POST https://api.airia.ai/v2/PipelineExecution/{agentId}
+// Auth:      X-API-KEY header
+// Sync:      asyncOutput: false — result returned immediately, no polling needed
 
-const AIRIA_BASE = 'https://airia.ai';
+const AIRIA_BASE = 'https://api.airia.ai';
 
 function buildPrompt(prData) {
   const {
@@ -45,7 +43,7 @@ function buildPrompt(prData) {
 ## Pull Request
 Title: ${title}
 Author: ${author}
-Branch: ${headBranch} → ${baseBranch}
+Branch: ${headBranch} -> ${baseBranch}
 Has test changes: ${hasTests}
 
 ## Description
@@ -84,25 +82,29 @@ Respond ONLY with a valid JSON object in this exact format:
 
 Rules:
 - risks array: 0-5 items, only real concerns, skip if none
-- resources array: include all linked issues/tickets found above
-- reviewers array: 2-3 suggestions from the contributors list who are most relevant based on files changed
-- If author is in contributors list, do not suggest them as reviewer`;
+- resources array: include all linked issues and tickets found above
+- reviewers array: 2-3 suggestions from the contributors list relevant to the files changed
+- Do not suggest the PR author as a reviewer
+- Output raw JSON only, no markdown fences, no extra text`;
 }
 
-async function createJob(userInput, apiKey, agentId) {
-  const body = {
-    pipelineVersionId: agentId,
-    userInput
-  };
+async function analyzePR(prData, apiKey, agentId) {
+  if (!apiKey) throw new Error('AIRIA_API_KEY is not set.');
+  if (!agentId) throw new Error('AIRIA_AGENT_ID is not set.');
 
-  const res = await fetch(`${AIRIA_BASE}/v1/JobOrchestration`, {
+  const prompt = buildPrompt(prData);
+
+  const res = await fetch(`${AIRIA_BASE}/v2/PipelineExecution/${agentId}`, {
     method: 'POST',
     headers: {
       'X-API-KEY': apiKey,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      userInput: prompt,
+      asyncOutput: false
+    })
   });
 
   if (res.status === 401) throw new Error('Airia API key is invalid or expired.');
@@ -112,56 +114,19 @@ async function createJob(userInput, apiKey, agentId) {
     throw new Error(`Airia API error ${res.status}: ${text}`);
   }
 
-  return res.json();
-}
+  const data = await res.json();
 
-async function getJobResult(jobId, apiKey) {
-  const res = await fetch(`${AIRIA_BASE}/v1/JobOrchestration/${jobId}/result`, {
-    headers: {
-      'X-API-KEY': apiKey,
-      'Accept': 'application/json'
-    }
-  });
-  if (!res.ok) throw new Error(`Failed to get job result: ${res.status}`);
-  return res.json();
-}
+  // Airia returns the output in the response — extract it
+  const output = data.output || data.result || data.content || data.message || '';
 
-// Poll for job completion and return parsed result
-async function waitForResult(jobId, apiKey, timeoutMs = 60000) {
-  const start = Date.now();
-  const interval = 2000;
+  if (!output) throw new Error('Airia returned an empty response.');
 
-  while (Date.now() - start < timeoutMs) {
-    await new Promise(r => setTimeout(r, interval));
-    const result = await getJobResult(jobId, apiKey);
+  // Strip markdown fences if the model wrapped JSON in ```
+  const cleaned = output.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
-    // Status values observed from Airia platform: Completed, Failed, Running, Pending
-    if (result.status === 'Completed' || result.status === 'completed') {
-      return result;
-    }
-    if (result.status === 'Failed' || result.status === 'failed') {
-      throw new Error(`Airia job failed: ${result.errorMessage || 'unknown error'}`);
-    }
-  }
-  throw new Error('Airia job timed out after 60 seconds.');
-}
-
-async function analyzePR(prData, apiKey, agentId) {
-  if (!apiKey) throw new Error('AIRIA_API_KEY is not set.');
-  if (!agentId) throw new Error('AIRIA_AGENT_ID is not set. Create your agent on Airia and add its ID to .env');
-
-  const prompt = buildPrompt(prData);
-  const job = await createJob(prompt, apiKey, agentId);
-  const jobId = job.id || job.jobId;
-
-  if (!jobId) throw new Error('Airia did not return a job ID.');
-
-  const result = await waitForResult(jobId, apiKey);
-
-  // Try to parse output as JSON
-  const output = result.output || result.result || result.content || '';
-  const jsonMatch = output.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Airia response was not valid JSON.');
+  // Extract JSON object
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`Airia response was not valid JSON. Got: ${output.slice(0, 200)}`);
 
   return JSON.parse(jsonMatch[0]);
 }
