@@ -216,18 +216,33 @@
       lastAnalysis = null;
       lastPrMeta   = null;
 
-      const res = await fetch(`${backendUrl}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner,
-          repo,
-          prNumber,
-          githubToken: settings.githubToken,
-          jiraBaseUrl: settings.jiraBaseUrl || null,
-          jiraToken: settings.jiraToken || null
-        })
+      const payload = JSON.stringify({
+        owner,
+        repo,
+        prNumber,
+        githubToken: settings.githubToken,
+        jiraBaseUrl: settings.jiraBaseUrl || null,
+        jiraToken: settings.jiraToken || null
       });
+
+      // Retry up to 2 times — Render free tier sleeps after inactivity (~30s wake-up)
+      let res;
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        try {
+          res = await fetch(`${backendUrl}/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload
+          });
+          break; // success — exit retry loop
+        } catch (fetchErr) {
+          if (attempt === 2) throw fetchErr;
+          // Show waking-up message and wait before retrying
+          const waitSecs = 15;
+          setCardContent('summary', `<span class="dp-placeholder">Backend is waking up (attempt ${attempt + 1}/3)… retrying in ${waitSecs}s</span>`);
+          await new Promise(r => setTimeout(r, waitSecs * 1000));
+        }
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

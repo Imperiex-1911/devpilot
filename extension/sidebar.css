@@ -14,6 +14,8 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   pointer-events: none;
+  transform: translateX(304px);
+  transition: transform 0.25s ease;
 }
 
 /* ── Toggle Tab ─────────────────────────────────────────────────────────── */
@@ -65,12 +67,10 @@
   overflow-y: auto;
   pointer-events: all;
   box-shadow: -4px 0 16px rgba(0,0,0,0.1);
-  transform: translateX(100%);
-  transition: transform 0.25s ease;
   max-height: calc(100vh - 80px);
 }
 
-#devpilot-sidebar.dp-open #dp-panel {
+#devpilot-sidebar.dp-open {
   transform: translateX(0);
 }
 
