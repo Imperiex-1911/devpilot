@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const analyzeRoute = require('./routes/analyze');
+const commentRoute = require('./routes/comment');
+const notifyRoute  = require('./routes/notify');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +26,8 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/analyze', analyzeRoute);
+app.use('/comment', commentRoute);
+app.use('/notify',  notifyRoute);
 
 app.use((err, req, res, next) => {
   console.error('[error]', err.message);

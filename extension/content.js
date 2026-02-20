@@ -12,7 +12,9 @@
 
   const SIDEBAR_ID = 'devpilot-sidebar';
   let currentPRUrl = '';
-  let isAnalyzing = false;
+  let isAnalyzing  = false;
+  let lastAnalysis = null;
+  let lastPrMeta   = null;
 
   // ─── URL / PR Detection ────────────────────────────────────────────────────
 
@@ -50,6 +52,10 @@
           ${makeCard('risks',     '⚠️', 'Risks')}
           ${makeCard('resources', '🔗', 'Resources')}
           ${makeCard('reviewers', '👥', 'Suggested Reviewers')}
+        </div>
+        <div id="dp-actions">
+          <button id="dp-btn-comment">📝 Post Review to GitHub</button>
+          <button id="dp-btn-notify">🔔 Notify on Slack</button>
         </div>
       </div>
     `;
@@ -91,6 +97,10 @@
         header.closest('.dp-card').classList.toggle('dp-collapsed');
       });
     });
+
+    // Action buttons
+    sidebar.querySelector('#dp-btn-comment').addEventListener('click', postReview);
+    sidebar.querySelector('#dp-btn-notify').addEventListener('click', notifySlack);
   }
 
   function restoreOpenState(sidebar) {
@@ -200,6 +210,12 @@
       const { owner, repo, prNumber } = getPRInfo();
       const backendUrl = settings.backendUrl || 'http://localhost:3000';
 
+      // Hide actions from any previous analysis
+      const actionsEl = document.getElementById('dp-actions');
+      if (actionsEl) actionsEl.classList.remove('dp-actions-visible');
+      lastAnalysis = null;
+      lastPrMeta   = null;
+
       const res = await fetch(`${backendUrl}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -226,6 +242,12 @@
       renderResources(analysis.resources);
       renderReviewers(analysis.reviewers);
 
+      // Store for action buttons
+      lastAnalysis = analysis;
+      lastPrMeta   = { owner, repo, prNumber, prUrl: window.location.href, prTitle: document.title, backendUrl, settings };
+      const el = document.getElementById('dp-actions');
+      if (el) el.classList.add('dp-actions-visible');
+
     } catch (err) {
       console.error('[DevPilot]', err);
       const msg = err.message || 'Unexpected error. Check the console.';
@@ -240,7 +262,7 @@
   function getSettings() {
     return new Promise(resolve => {
       chrome.storage.local.get(
-        ['githubToken', 'backendUrl', 'jiraBaseUrl', 'jiraToken'],
+        ['githubToken', 'backendUrl', 'jiraBaseUrl', 'jiraToken', 'slackWebhook'],
         resolve
       );
     });
@@ -255,7 +277,146 @@
       .replace(/"/g, '&quot;');
   }
 
-  // ─── SPA Navigation Watcher ────────────────────────────────────────────────
+  // ─── HITL Modal ────────────────────────────────────────────────────────────
+
+  function showModal({ title, previewText, confirmLabel, onConfirm }) {
+    const overlay = document.createElement('div');
+    overlay.id = 'dp-modal-overlay';
+    overlay.innerHTML = `
+      <div id="dp-modal">
+        <div id="dp-modal-header">${escapeHtml(title)}</div>
+        <div id="dp-modal-body">
+          <p id="dp-modal-desc">Review what will be posted, then confirm:</p>
+          <pre id="dp-modal-preview">${escapeHtml(previewText)}</pre>
+        </div>
+        <div id="dp-modal-footer">
+          <button id="dp-modal-cancel">Cancel</button>
+          <button id="dp-modal-confirm">${escapeHtml(confirmLabel)}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#dp-modal-cancel').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#dp-modal-overlay')?.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+    overlay.querySelector('#dp-modal-confirm').addEventListener('click', () => {
+      overlay.remove();
+      onConfirm();
+    });
+    // Close on background click
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+  }
+
+  // ─── Action: Post Review to GitHub ─────────────────────────────────────────
+
+  async function postReview() {
+    if (!lastAnalysis || !lastPrMeta) return;
+
+    const { owner, repo, prNumber, backendUrl, settings } = lastPrMeta;
+
+    // Build a short preview of what will be posted
+    const riskLines = (lastAnalysis.risks || [])
+      .map(r => `[${r.level.toUpperCase()}] ${r.category}: ${r.description}`)
+      .join('\n') || 'No significant risks detected.';
+    const previewText =
+      `SUMMARY:\n${lastAnalysis.summary}\n\nRISKS:\n${riskLines}\n\nSUGGESTED REVIEWERS:\n` +
+      (lastAnalysis.reviewers || []).map(r => `@${r.username} — ${r.reason}`).join('\n') ||
+      'No suggestions.';
+
+    showModal({
+      title: 'Post Review to GitHub',
+      previewText,
+      confirmLabel: 'Post Comment',
+      onConfirm: async () => {
+        const btn = document.getElementById('dp-btn-comment');
+        if (btn) { btn.disabled = true; btn.textContent = 'Posting...'; }
+
+        try {
+          const res = await fetch(`${backendUrl}/comment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              owner, repo, prNumber,
+              githubToken: settings.githubToken,
+              analysis: lastAnalysis
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+          if (btn) {
+            btn.textContent = 'Comment Posted!';
+            btn.style.background = '#1f883d';
+            btn.style.color = '#fff';
+            if (data.commentUrl) {
+              btn.onclick = () => window.open(data.commentUrl, '_blank');
+              btn.title = 'Click to view comment';
+            }
+          }
+        } catch (err) {
+          console.error('[DevPilot] postReview', err);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Post failed — retry?';
+          }
+        }
+      }
+    });
+  }
+
+  // ─── Action: Notify on Slack ───────────────────────────────────────────────
+
+  async function notifySlack() {
+    if (!lastAnalysis || !lastPrMeta) return;
+
+    const { owner, repo, prNumber, prUrl, prTitle, backendUrl, settings } = lastPrMeta;
+    const webhook = settings.slackWebhook;
+
+    if (!webhook) {
+      const btn = document.getElementById('dp-btn-notify');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = 'Add webhook in Settings';
+        setTimeout(() => { btn.textContent = orig; }, 3000);
+      }
+      return;
+    }
+
+    const btn = document.getElementById('dp-btn-notify');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    try {
+      const res = await fetch(`${backendUrl}/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slackWebhook: webhook,
+          analysis: lastAnalysis,
+          prTitle, prUrl, owner, repo, prNumber
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      if (btn) {
+        btn.textContent = 'Slack Notified!';
+        btn.style.background = '#4a154b';
+        btn.style.color = '#fff';
+      }
+    } catch (err) {
+      console.error('[DevPilot] notifySlack', err);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Notify failed — retry?';
+      }
+    }
+  }
 
   function onURLChange() {
     if (!isPRPage()) {

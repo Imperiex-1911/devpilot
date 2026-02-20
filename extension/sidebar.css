@@ -315,6 +315,166 @@
   line-height: 1.5;
 }
 
+/* ── Action Buttons ─────────────────────────────────────────────────────── */
+
+#dp-actions {
+  display: none;
+  padding: 10px 12px 14px;
+  border-top: 1px solid #d0d7de;
+  flex-direction: column;
+  gap: 7px;
+}
+
+#dp-actions.dp-actions-visible {
+  display: flex;
+}
+
+#dp-btn-comment,
+#dp-btn-notify {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+}
+
+#dp-btn-comment {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+  color: #24292f;
+}
+
+#dp-btn-comment:hover:not(:disabled) {
+  background: #eef1f4;
+}
+
+#dp-btn-notify {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+  color: #24292f;
+}
+
+#dp-btn-notify:hover:not(:disabled) {
+  background: #eef1f4;
+}
+
+#dp-btn-comment:disabled,
+#dp-btn-notify:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── HITL Modal ─────────────────────────────────────────────────────────── */
+
+#dp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#dp-modal {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #d0d7de;
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+#dp-modal-header {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #24292f;
+  border-bottom: 1px solid #d0d7de;
+  background: #f6f8fa;
+  border-radius: 10px 10px 0 0;
+}
+
+#dp-modal-body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+#dp-modal-desc {
+  font-size: 12px;
+  color: #57606a;
+  margin-bottom: 10px;
+}
+
+#dp-modal-preview {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: #24292f;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 0;
+}
+
+#dp-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid #d0d7de;
+  background: #f6f8fa;
+  border-radius: 0 0 10px 10px;
+}
+
+#dp-modal-cancel {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #24292f;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#dp-modal-cancel:hover {
+  background: #eef1f4;
+}
+
+#dp-modal-confirm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #1a7f37;
+  background: #1f883d;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#dp-modal-confirm:hover {
+  background: #1a7f37;
+}
+
 /* ── Dark Mode ──────────────────────────────────────────────────────────── */
 
 @media (prefers-color-scheme: dark) {

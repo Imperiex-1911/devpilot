@@ -211,6 +211,18 @@
       <input type="password" id="jira-token" placeholder="email:api_token" autocomplete="off">
       <p class="hint">Format: <code>your@email.com:your_api_token</code></p>
     </div>
+
+    <hr class="divider">
+    <p class="section-title">Slack (Optional)</p>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="slack-webhook">Slack Webhook URL</label>
+        <span class="optional">optional</span>
+      </div>
+      <input type="url" id="slack-webhook" placeholder="https://hooks.slack.com/services/..." autocomplete="off">
+      <p class="hint">Creates a Slack notification with PR analysis. <a href="https://api.slack.com/messaging/webhooks" target="_blank">Set up Incoming Webhooks</a></p>
+    </div>
   </div>
 
   <div class="status" id="status"></div>

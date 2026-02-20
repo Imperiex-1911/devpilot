@@ -1,4 +1,4 @@
-const KEYS = ['githubToken', 'backendUrl', 'jiraBaseUrl', 'jiraToken'];
+const KEYS = ['githubToken', 'backendUrl', 'jiraBaseUrl', 'jiraToken', 'slackWebhook'];
 const RENDER_URL = 'https://devpilot-backend-fqtm.onrender.com';
 
 const $ = id => document.getElementById(id);
@@ -13,19 +13,21 @@ function showStatus(msg, type) {
 
 // Load saved settings on popup open
 chrome.storage.local.get(KEYS, data => {
-  if (data.githubToken) $('github-token').value = data.githubToken;
-  if (data.jiraBaseUrl) $('jira-url').value      = data.jiraBaseUrl;
-  if (data.jiraToken)   $('jira-token').value    = data.jiraToken;
+  if (data.githubToken)  $('github-token').value  = data.githubToken;
+  if (data.jiraBaseUrl)  $('jira-url').value       = data.jiraBaseUrl;
+  if (data.jiraToken)    $('jira-token').value     = data.jiraToken;
+  if (data.slackWebhook) $('slack-webhook').value  = data.slackWebhook;
 
   // Default to Render URL
   $('backend-url').value = data.backendUrl || RENDER_URL;
 });
 
 $('btn-save').addEventListener('click', () => {
-  const githubToken = $('github-token').value.trim();
-  const backendUrl  = $('backend-url').value.trim();
-  const jiraBaseUrl = $('jira-url').value.trim();
-  const jiraToken   = $('jira-token').value.trim();
+  const githubToken  = $('github-token').value.trim();
+  const backendUrl   = $('backend-url').value.trim();
+  const jiraBaseUrl  = $('jira-url').value.trim();
+  const jiraToken    = $('jira-token').value.trim();
+  const slackWebhook = $('slack-webhook').value.trim();
 
   if (!githubToken) {
     showStatus('GitHub token is required.', 'error');
@@ -37,17 +39,18 @@ $('btn-save').addEventListener('click', () => {
     return;
   }
 
-  chrome.storage.local.set({ githubToken, backendUrl, jiraBaseUrl, jiraToken }, () => {
+  chrome.storage.local.set({ githubToken, backendUrl, jiraBaseUrl, jiraToken, slackWebhook }, () => {
     showStatus('Settings saved!', 'success');
   });
 });
 
 $('btn-clear').addEventListener('click', () => {
   chrome.storage.local.remove(KEYS, () => {
-    $('github-token').value = '';
-    $('backend-url').value  = RENDER_URL;
-    $('jira-url').value     = '';
-    $('jira-token').value   = '';
+    $('github-token').value  = '';
+    $('backend-url').value   = RENDER_URL;
+    $('jira-url').value      = '';
+    $('jira-token').value    = '';
+    $('slack-webhook').value = '';
     showStatus('Settings cleared.', 'success');
   });
 });
