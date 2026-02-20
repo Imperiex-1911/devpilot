@@ -361,8 +361,14 @@
             })
           });
 
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            const msg = errText.includes('<!DOCTYPE') || errText.includes('<html')
+              ? 'Backend is offline — wait 30s and retry'
+              : errText.substring(0, 120) || `HTTP ${res.status}`;
+            throw new Error(msg);
+          }
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
           if (btn) {
             btn.textContent = 'Comment Posted!';
@@ -416,8 +422,14 @@
         })
       });
 
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        const msg = errText.includes('<!DOCTYPE') || errText.includes('<html')
+          ? 'Backend is offline — wait 30s and retry'
+          : errText.substring(0, 120) || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
       if (btn) {
         btn.textContent = 'Slack Notified!';
