@@ -1,4 +1,5 @@
 const KEYS = ['githubToken', 'backendUrl', 'jiraBaseUrl', 'jiraToken'];
+const RENDER_URL = 'https://devpilot-backend-fqtm.onrender.com';
 
 const $ = id => document.getElementById(id);
 const statusEl = $('status');
@@ -13,12 +14,11 @@ function showStatus(msg, type) {
 // Load saved settings on popup open
 chrome.storage.local.get(KEYS, data => {
   if (data.githubToken) $('github-token').value = data.githubToken;
-  if (data.backendUrl)  $('backend-url').value  = data.backendUrl;
   if (data.jiraBaseUrl) $('jira-url').value      = data.jiraBaseUrl;
   if (data.jiraToken)   $('jira-token').value    = data.jiraToken;
 
-  // Default backend URL
-  if (!data.backendUrl) $('backend-url').value = 'http://localhost:3000';
+  // Default to Render URL
+  $('backend-url').value = data.backendUrl || RENDER_URL;
 });
 
 $('btn-save').addEventListener('click', () => {
@@ -44,12 +44,8 @@ $('btn-save').addEventListener('click', () => {
 
 $('btn-clear').addEventListener('click', () => {
   chrome.storage.local.remove(KEYS, () => {
-    KEYS.forEach(k => {
-      const el = $('github-token backend-url jira-url jira-token'.split(' ')[KEYS.indexOf(k)]);
-      if (el) el.value = '';
-    });
     $('github-token').value = '';
-    $('backend-url').value  = 'http://localhost:3000';
+    $('backend-url').value  = RENDER_URL;
     $('jira-url').value     = '';
     $('jira-token').value   = '';
     showStatus('Settings cleared.', 'success');

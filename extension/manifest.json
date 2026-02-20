@@ -9,6 +9,7 @@
   ],
   "host_permissions": [
     "https://github.com/*",
+    "https://devpilot-backend-fqtm.onrender.com/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],
